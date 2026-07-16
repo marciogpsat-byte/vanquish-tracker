@@ -1,5 +1,6 @@
 import flet as ft
 import os
+
 # Histórico temporário na memória para rodar em servidores gratuitos de nuvem
 historico_memoria = []
 
@@ -23,11 +24,11 @@ def main(page: ft.Page):
             lista_historico.controls.append(
                 ft.Container(
                     content=ft.Row([
-                        ft.Icon(ft.icons.GPS_FIXED, color=ft.colors.AMBER, size=14),
-                        ft.Text(f"{item['alvo']} (VDI: {item['vdi']}) - {item['confianca']}%", size=11, color=ft.colors.WHITE)
+                        ft.Icon(ft.icons.GPS_FIXED, color="amber", size=14),
+                        ft.Text(f"{item['alvo']} (VDI: {item['vdi']}) - {item['confianca']}%", size=11, color="white")
                     ], alignment=ft.MainAxisAlignment.START),
                     padding=6,
-                    bgcolor=ft.colors.SURFACE_VARIANT,
+                    bgcolor="surfacevariant",
                     border_radius=5
                 )
             )
@@ -59,19 +60,19 @@ def main(page: ft.Page):
 
     header = ft.Container(
         content=ft.Column([
-            ft.Text("VANQUISH TRACKER", size=16, weight=ft.FontWeight.BOLD, color=ft.colors.AMBER),
-            ft.Text("Mapeamento Inteligente de Alvos", size=9, color=ft.colors.GREY_400),
+            ft.Text("VANQUISH TRACKER", size=16, weight=ft.FontWeight.BOLD, color="amber"),
+            ft.Text("Mapeamento Inteligente de Alvos", size=9, color="grey400"),
         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
         padding=2,
     )
 
     visor_vdi = ft.Container(
         content=ft.Column([
-            ft.Text(ref=txt_vdi, value="--", size=40, weight=ft.FontWeight.BOLD, color=ft.colors.WHITE),
-            ft.Text(ref=txt_alvo, value="Aguardando Sinal...", size=12, color=ft.colors.AMBER_400, weight=ft.FontWeight.W_500),
-            ft.Text(ref=txt_confianca, value="--%", size=10, color=ft.colors.GREY_400),
+            ft.Text(ref=txt_vdi, value="--", size=40, weight=ft.FontWeight.BOLD, color="white"),
+            ft.Text(ref=txt_alvo, value="Aguardando Sinal...", size=12, color="amber400", weight=ft.FontWeight.W_500),
+            ft.Text(ref=txt_confianca, value="--%", size=10, color="grey400"),
         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
-        bgcolor=ft.colors.BLUE_GREY_900,
+        bgcolor="bluegrey900",
         padding=10,
         border_radius=10,
         width=240,
@@ -83,9 +84,9 @@ def main(page: ft.Page):
                 ft.Text("Ajuste de Solo", weight=ft.FontWeight.BOLD, size=11),
                 ft.Slider(ref=nivel_mineralizacao, min=1, max=5, divisions=4, value=4, label="Nível {value}"),
                 ft.Row([
-                    ft.ElevatedButton("Ferro", on_click=lambda _: detectar_sinal(120), bgcolor=ft.colors.GREY_800),
-                    ft.ElevatedButton("Médio", on_click=lambda _: detectar_sinal(450), bgcolor=ft.colors.BLUE_GREY_700),
-                    ft.ElevatedButton("Prata", on_click=lambda _: detectar_sinal(850), bgcolor=ft.colors.AMBER_800),
+                    ft.ElevatedButton("Ferro", on_click=lambda _: detectar_sinal(120), bgcolor="grey800"),
+                    ft.ElevatedButton("Médio", on_click=lambda _: detectar_sinal(450), bgcolor="bluegrey700"),
+                    ft.ElevatedButton("Prata", on_click=lambda _: detectar_sinal(850), bgcolor="amber800"),
                 ], alignment=ft.MainAxisAlignment.CENTER, spacing=3)
             ], spacing=3),
             padding=8,
@@ -98,7 +99,7 @@ def main(page: ft.Page):
         visor_vdi,
         controles,
         ft.Text("Histórico Recente", size=11, weight=ft.FontWeight.BOLD),
-        ft.Container(content=lista_historico, height=100, width=280, border_radius=6, bgcolor=ft.colors.BLACK12),
+        ft.Container(content=lista_historico, height=100, width=280, border_radius=6, bgcolor="black12"),
     )
     
     atualizar_historico_ui()
