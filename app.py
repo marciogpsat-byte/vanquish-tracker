@@ -24,7 +24,7 @@ def main(page: ft.Page):
             lista_historico.controls.append(
                 ft.Container(
                     content=ft.Row([
-                        ft.Icon(ft.icons.GPS_FIXED, color="amber", size=14),
+                        ft.Icon("gps_fixed", color="amber", size=14),
                         ft.Text(f"{item['alvo']} (VDI: {item['vdi']}) - {item['confianca']}%", size=11, color="white")
                     ], alignment=ft.MainAxisAlignment.START),
                     padding=6,
