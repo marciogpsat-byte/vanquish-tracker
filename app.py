@@ -1,5 +1,5 @@
 import flet as ft
-
+import os
 # Histórico temporário na memória para rodar em servidores gratuitos de nuvem
 historico_memoria = []
 
@@ -104,4 +104,6 @@ def main(page: ft.Page):
     atualizar_historico_ui()
 
 if __name__ == '__main__':
-    ft.app(target=main, view=ft.AppView.WEB_BROWSER)
+    # O Render diz em qual porta rodar através da variável de ambiente PORT
+    porta = int(os.environ.get("PORT", 8080))
+    ft.app(target=main, view=ft.AppView.WEB_BROWSER, host="0.0.0.0", port=porta)
