@@ -13,17 +13,14 @@ def main(page: ft.Page):
     page.scroll = ft.ScrollMode.AUTO
     page.padding = 10
 
-    # Inicializa o Gravador de Áudio do Flet
-    # O Flet moderno às vezes exige que o controle seja chamado de forma explícita 
-# ou pelo pacote de controles se o autocomplete do servidor falhar
-try:
-    gravador = ft.AudioRecorder()
-except AttributeError:
-    # Caso a versão use a nomenclatura antiga/alternativa de pacotes
-    from flet.audio_recorder import AudioRecorder
-    gravador = AudioRecorder()
-
-page.overlay.append(gravador)
+    # Inicialização segura do Gravador de Áudio
+    try:
+        gravador = ft.AudioRecorder()
+    except AttributeError:
+        from flet.audio_recorder import AudioRecorder
+        gravador = AudioRecorder()
+    
+    page.overlay.append(gravador)
     
     nivel_mineralizacao = ft.Ref[ft.Slider]()
     txt_vdi = ft.Ref[ft.Text]()
@@ -170,31 +167,23 @@ page.overlay.append(gravador)
     # --- PROCESSAMENTO MATEMÁTICO REAL DO ÁUDIO ---
     def analisar_audio_gravado(caminho_audio):
         try:
-            # Lê o arquivo WAV gerado pelo gravador
             taxa_amostragem, dados = wavfile.read(caminho_audio)
-            
-            # Se for estéreo, transforma em mono
             if len(dados.shape) > 1:
                 dados = dados[:, 0]
             
-            # Aplica a Transformada Rápida de Fourier (FFT) para achar a frequência predominante
             fft_dados = np.fft.rfft(dados)
             frequencias = np.fft.rfftfreq(len(dados), d=1.0/taxa_amostragem)
             
-            # Pega o pico de maior volume/energia sonora
             indice_pico = np.argmax(np.abs(fft_dados))
             frequencia_pico = frequencias[indice_pico]
             
-            # Manda a frequência exata detectada para atualizar a interface!
             detectar_sinal(frequencia_pico)
-            
-        except Exception as e:
-            txt_status_microfone.value = f"Erro na análise física: som muito baixo."
+        except Exception:
+            txt_status_microfone.value = "Erro na análise: som muito baixo."
             page.update()
 
     def detectar_sinal(freq):
         min_level = int(nivel_mineralizacao.current.value)
-        # Converte a frequência de som do Vanquish para escala VDI aproximada
         vdi_base = int((freq - 300) / 15)
         
         if min_level >= 4 and -4 <= vdi_base <= 3:
