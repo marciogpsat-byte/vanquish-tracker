@@ -14,8 +14,16 @@ def main(page: ft.Page):
     page.padding = 10
 
     # Inicializa o Gravador de Áudio do Flet
+    # O Flet moderno às vezes exige que o controle seja chamado de forma explícita 
+# ou pelo pacote de controles se o autocomplete do servidor falhar
+try:
     gravador = ft.AudioRecorder()
-    page.overlay.append(gravador)
+except AttributeError:
+    # Caso a versão use a nomenclatura antiga/alternativa de pacotes
+    from flet.audio_recorder import AudioRecorder
+    gravador = AudioRecorder()
+
+page.overlay.append(gravador)
     
     nivel_mineralizacao = ft.Ref[ft.Slider]()
     txt_vdi = ft.Ref[ft.Text]()
