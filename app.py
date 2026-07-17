@@ -3,7 +3,7 @@ import os
 import numpy as np
 from scipy.io import wavfile
 
-# Histórico temporário na memória
+# Histórico temporário na memória para rodar em servidores gratuitos de nuvem
 historico_memoria = []
 
 def main(page: ft.Page):
@@ -12,11 +12,9 @@ def main(page: ft.Page):
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     page.scroll = ft.ScrollMode.AUTO
     page.padding = 10
-    
-       # Inicialização direta para Flet moderno
-    from flet.audio_recorder import AudioRecorder as ftAudioRecorder
-    gravador = ftAudioRecorder()
-    
+
+    # Inicialização padrão e limpa do Flet moderno
+    gravador = ft.AudioRecorder()
     page.overlay.append(gravador)
     
     nivel_mineralizacao = ft.Ref[ft.Slider]()
@@ -66,12 +64,14 @@ def main(page: ft.Page):
                             ft.DataCell(ft.Text(f"{item['vdi']:+d}" if item['vdi'] != 0 else "0")),
                             ft.DataCell(
                                 ft.Row([
+                                    # Botão para Editar Registro
                                     ft.IconButton(
                                         icon="edit",
                                         icon_color="amber",
                                         icon_size=16,
                                         on_click=lambda _, i=idx: iniciar_edicao(i)
                                     ),
+                                    # Botão para Excluir Registro
                                     ft.IconButton(
                                         icon="delete",
                                         icon_color="red",
@@ -124,6 +124,7 @@ def main(page: ft.Page):
 
         preencher_tabela()
 
+        # Janela flutuante do Relatório
         modal_relatorio = ft.AlertDialog(
             title=ft.Row([
                 ft.Text("Relatório de Detecção", size=16, weight=ft.FontWeight.BOLD),
@@ -168,6 +169,7 @@ def main(page: ft.Page):
             if len(dados.shape) > 1:
                 dados = dados[:, 0]
             
+            # Executa a FFT para encontrar a frequência em Hz do apito do detector
             fft_dados = np.fft.rfft(dados)
             frequencias = np.fft.rfftfreq(len(dados), d=1.0/taxa_amostragem)
             
