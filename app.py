@@ -12,13 +12,10 @@ def main(page: ft.Page):
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     page.scroll = ft.ScrollMode.AUTO
     page.padding = 10
-
-    # Inicialização segura do Gravador de Áudio
-    try:
-        gravador = ft.AudioRecorder()
-    except AttributeError:
-        from flet.audio_recorder import AudioRecorder
-        gravador = AudioRecorder()
+    
+       # Inicialização direta para Flet moderno
+    from flet.audio_recorder import AudioRecorder as ftAudioRecorder
+    gravador = ftAudioRecorder()
     
     page.overlay.append(gravador)
     
