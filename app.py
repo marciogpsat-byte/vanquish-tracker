@@ -248,7 +248,6 @@ def main(page: ft.Page):
             page.update()
 
     # --- INTERFACE GRÁFICA ---
-    # CORREÇÃO AQUI: Mudado de ft.padding.only para ft.Padding
     header = ft.Container(
         content=ft.Row([
             ft.IconButton("power_settings_new", icon_color="transparent", disabled=True),
@@ -282,11 +281,12 @@ def main(page: ft.Page):
         width=200
     )
 
+    # CORREÇÃO AQUI: Parâmetro de cor simplificado direto para evitar incompatibilidade de estilo
     btn_relatorio = ft.OutlinedButton(
         text="Ver Relatório / Corrigir",
         icon="assessment",
         on_click=abrir_relatorio,
-        style=ft.ButtonStyle(color="amber"),
+        color="amber",
         width=200
     )
 
