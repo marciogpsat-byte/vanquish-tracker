@@ -22,7 +22,6 @@ def main(page: ft.Page):
         gravador = ft.AudioRecorder()
         page.overlay.append(gravador)
     else:
-        # Se o Render insistir na versão antiga, o app não quebra! Ele apenas avisa de forma elegante.
         txt_status_microfone.value = "Aviso: Servidor usando Flet antigo. Recursos de áudio limitados."
         txt_status_microfone.color = "amber500"
     
@@ -249,6 +248,7 @@ def main(page: ft.Page):
             page.update()
 
     # --- INTERFACE GRÁFICA ---
+    # CORREÇÃO AQUI: Mudado de ft.padding.only para ft.Padding
     header = ft.Container(
         content=ft.Row([
             ft.IconButton("power_settings_new", icon_color="transparent", disabled=True),
@@ -258,7 +258,7 @@ def main(page: ft.Page):
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             ft.IconButton("power_settings_new", icon_color="red500", tooltip="Sair do Aplicativo", on_click=fechar_aplicativo)
         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-        padding=ft.padding.only(left=5, right=5, bottom=5)
+        padding=ft.Padding(left=5, right=5, bottom=5, top=0)
     )
 
     visor_vdi = ft.Container(
