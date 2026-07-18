@@ -16,13 +16,13 @@ def main(page: ft.Page):
     # Texto de status inicial
     txt_status_microfone = ft.Text("Microfone Pronto", size=11, color="grey400")
 
-    # CONTROLE BLINDADO: Verifica se a versão do Flet suporta o gravador nativo
+    # CONTROLE BLINDADO: Verifica se o ambiente suporta o gravador nativo
     gravador = None
     if hasattr(ft, "AudioRecorder"):
         gravador = ft.AudioRecorder()
         page.overlay.append(gravador)
     else:
-        txt_status_microfone.value = "Aviso: Servidor usando Flet antigo. Recursos de áudio limitados."
+        txt_status_microfone.value = "Aviso: Recursos de áudio limitados no servidor."
         txt_status_microfone.color = "amber500"
     
     nivel_mineralizacao = ft.Ref[ft.Slider]()
@@ -115,8 +115,8 @@ def main(page: ft.Page):
                 title=ft.Text("Editar Registro", size=14),
                 content=ft.Column([input_alvo, input_vdi], tight=True, spacing=10),
                 actions=[
-                    ft.TextButton("Cancelar", on_click=lambda _: fechar_modal(dialogo_edicao)),
-                    ft.TextButton("Salvar", on_click=salvar_edicao)
+                    ft.TextButton(content=ft.Text("Cancelar"), on_click=lambda _: fechar_modal(dialogo_edicao)),
+                    ft.TextButton(content=ft.Text("Salvar"), on_click=salvar_edicao)
                 ]
             )
             page.overlay.append(dialogo_edicao)
@@ -161,7 +161,7 @@ def main(page: ft.Page):
                     ], alignment=ft.MainAxisAlignment.START),
                     padding=6,
                     bgcolor="surfacevariant",
-                    border_radius=5
+                    border_radius=ft.BorderRadius.all(5)
                 )
             )
         page.update()
@@ -210,7 +210,7 @@ def main(page: ft.Page):
 
     def alternar_escuta(e):
         if gravador is None:
-            txt_status_microfone.value = "Gravação indisponível devido à versão do servidor."
+            txt_status_microfone.value = "Gravação indisponível devido ao ambiente."
             page.update()
             return
 
@@ -221,15 +221,16 @@ def main(page: ft.Page):
                 gravador.request_permission()
                 return
 
-            if btn_escutar.text == "Iniciar Escuta":
-                btn_escutar.text = "Ouvindo detector..."
+            # Tratamento dinâmico e seguro para alteração de estados visuais
+            if btn_escutar.content.value == "Iniciar Escuta":
+                btn_escutar.content.value = "Ouvindo detector..."
                 btn_escutar.icon = "mic"
                 btn_escutar.bgcolor = "red800"
                 txt_status_microfone.value = "Capturando som do detector..."
                 page.update()
                 gravador.start_recording()
             else:
-                btn_escutar.text = "Iniciar Escuta"
+                btn_escutar.content.value = "Iniciar Escuta"
                 btn_escutar.icon = "mic_none"
                 btn_escutar.bgcolor = "bluegrey700"
                 txt_status_microfone.value = "Processando áudio capturado..."
@@ -247,7 +248,7 @@ def main(page: ft.Page):
             txt_status_microfone.value = f"Erro no microfone: {str(ex)}"
             page.update()
 
-    # --- INTERFACE GRÁFICA ---
+    # --- INTERFACE GRÁFICA CORRIGIDA PARA MÉTODOS MODERNOS ---
     header = ft.Container(
         content=ft.Row([
             ft.IconButton("power_settings_new", icon_color="transparent", disabled=True),
@@ -257,7 +258,7 @@ def main(page: ft.Page):
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             ft.IconButton("power_settings_new", icon_color="red500", tooltip="Sair do Aplicativo", on_click=fechar_aplicativo)
         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-        padding=ft.Padding(left=5, right=5, bottom=5, top=0)
+        padding=ft.Padding.only(left=5, right=5, bottom=5, top=0)
     )
 
     visor_vdi = ft.Container(
@@ -268,25 +269,22 @@ def main(page: ft.Page):
         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
         bgcolor="bluegrey900",
         padding=10,
-        border_radius=10,
+        border_radius=ft.BorderRadius.all(10),
         width=240,
     )
 
     btn_escutar = ft.ElevatedButton(
-        text="Iniciar Escuta",
+        content=ft.Text("Iniciar Escuta", color="white"),
         icon="mic_none",
         on_click=alternar_escuta,
         bgcolor="bluegrey700",
-        color="white",
         width=200
     )
 
-    # CORREÇÃO AQUI: Parâmetro de cor simplificado direto para evitar incompatibilidade de estilo
     btn_relatorio = ft.OutlinedButton(
-        text="Ver Relatório / Corrigir",
+        content=ft.Text("Ver Relatório / Corrigir", color="amber"),
         icon="assessment",
         on_click=abrir_relatorio,
-        color="amber",
         width=200
     )
 
@@ -301,9 +299,9 @@ def main(page: ft.Page):
                 ft.Text("Ajuste de Solo Manual", size=10, color="grey400"),
                 ft.Slider(ref=nivel_mineralizacao, min=1, max=5, divisions=4, value=4, label="Nível {value}"),
                 ft.Row([
-                    ft.ElevatedButton("Ferro", on_click=lambda _: detectar_sinal(120), bgcolor="grey800"),
-                    ft.ElevatedButton("Médio", on_click=lambda _: detectar_sinal(450), bgcolor="bluegrey700"),
-                    ft.ElevatedButton("Prata", on_click=lambda _: detectar_sinal(850), bgcolor="amber800"),
+                    ft.ElevatedButton(content=ft.Text("Ferro", color="white"), on_click=lambda _: detectar_sinal(120), bgcolor="grey800"),
+                    ft.ElevatedButton(content=ft.Text("Médio", color="white"), on_click=lambda _: detectar_sinal(450), bgcolor="bluegrey700"),
+                    ft.ElevatedButton(content=ft.Text("Prata", color="white"), on_click=lambda _: detectar_sinal(850), bgcolor="amber800"),
                 ], alignment=ft.MainAxisAlignment.CENTER, spacing=3)
             ], spacing=3, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             padding=8,
@@ -316,11 +314,12 @@ def main(page: ft.Page):
         visor_vdi,
         controles,
         ft.Text("Histórico Recente", size=11, weight=ft.FontWeight.BOLD),
-        ft.Container(content=lista_historico, height=100, width=280, border_radius=6, bgcolor="black12"),
+        ft.Container(content=lista_historico, height=100, width=280, border_radius=ft.BorderRadius.all(6), bgcolor="black12"),
     )
     
     atualizar_historico_ui()
 
 if __name__ == '__main__':
+    # O Render injeta a porta automaticamente na variável de ambiente PORT
     porta = int(os.environ.get("PORT", 8080))
     ft.app(target=main, view=ft.AppView.WEB_BROWSER, host="0.0.0.0", port=porta)
