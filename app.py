@@ -37,7 +37,7 @@ def main(page: ft.Page):
         page.add(
             ft.Container(
                 content=ft.Column([
-                    ft.Icon(name=ft.Icons.POWER_SETTINGS_NEW, color="red500", size=60),
+                    ft.Icon(ft.Icons.POWER_SETTINGS_NEW, color="red500", size=60), # CORREÇÃO: Removido 'name='
                     ft.Text("Sessão Encerrada!", size=20, weight=ft.FontWeight.BOLD, color="white"),
                     ft.Text("O Vanquish Tracker foi fechado com segurança.", size=12, color="grey400"),
                     ft.Text("Você já pode fechar esta aba do seu navegador.", size=10, color="grey600"),
@@ -132,7 +132,7 @@ def main(page: ft.Page):
         modal_relatorio = ft.AlertDialog(
             title=ft.Row([
                 ft.Text("Relatório de Detecção", size=16, weight=ft.FontWeight.BOLD),
-                ft.IconButton(icon=ft.Icons.CLOSE, on_click=lambda _: fechar_modal(modal_relatorio)) # CORREÇÃO: icon=ft.Icons.CLOSE
+                ft.IconButton(icon=ft.Icons.CLOSE, on_click=lambda _: fechar_modal(modal_relatorio))
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             content=ft.Container(
                 content=ft.Column([
@@ -156,7 +156,7 @@ def main(page: ft.Page):
             lista_historico.controls.append(
                 ft.Container(
                     content=ft.Row([
-                        ft.Icon(name=ft.Icons.GPS_FIXED, color="amber", size=14),
+                        ft.Icon(ft.Icons.GPS_FIXED, color="amber", size=14), # CORREÇÃO: Removido 'name='
                         ft.Text(f"{item['alvo']} (VDI: {item['vdi']}) - {item['confianca']}%", size=11, color="white")
                     ], alignment=ft.MainAxisAlignment.START),
                     padding=6,
@@ -250,7 +250,6 @@ def main(page: ft.Page):
     # --- INTERFACE GRÁFICA CORRIGIDA ---
     header = ft.Container(
         content=ft.Row([
-            # CORREÇÃO: Especificado explicitamente o parâmetro 'icon=' e ajustado o espaçador invisível
             ft.IconButton(icon=ft.Icons.POWER_SETTINGS_NEW, icon_color="transparent", disabled=True),
             ft.Column([
                 ft.Text("VANQUISH TRACKER", size=15, weight=ft.FontWeight.BOLD, color="amber"),
