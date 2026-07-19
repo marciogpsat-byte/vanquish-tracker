@@ -42,7 +42,7 @@ def main(page: ft.Page):
                     ft.Text("O Vanquish Tracker foi fechado com segurança.", size=12, color="grey400"),
                     ft.Text("Você já pode fechar esta aba do seu navegador.", size=10, color="grey600"),
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=15),
-                alignment=ft.Alignment(0, 0), # CORREÇÃO: Alinhamento Centralizado Moderno (0,0)
+                alignment=ft.Alignment(0, 0),
                 padding=50
             )
         )
@@ -247,7 +247,7 @@ def main(page: ft.Page):
             txt_status_microfone.value = f"Erro no microfone: {str(ex)}"
             page.update()
 
-    # --- INTERFACE GRÁFICA CORRIGIDA ---
+    # --- INTERFACE GRÁFICA ---
     header = ft.Container(
         content=ft.Row([
             ft.IconButton("power_settings_new", icon_color="transparent", disabled=True),
@@ -291,14 +291,15 @@ def main(page: ft.Page):
         content=ft.Container(
             content=ft.Column([
                 ft.Text("Controle de Áudio e Solo", weight=ft.FontWeight.BOLD, size=11),
-                ft.Container(content=btn_escutar, alignment=ft.Alignment(0, 0), padding=2), # CORREÇÃO: ft.Alignment(0,0)
-                ft.Container(content=btn_relatorio, alignment=ft.Alignment(0, 0), padding=2), # CORREÇÃO: ft.Alignment(0,0)
+                ft.Container(content=btn_escutar, alignment=ft.Alignment(0, 0), padding=2),
+                ft.Container(content=btn_relatorio, alignment=ft.Alignment(0, 0), padding=2),
                 txt_status_microfone,
                 ft.Divider(height=10, color="grey800"),
                 ft.Text("Ajuste de Solo Manual", size=10, color="grey400"),
                 ft.Slider(ref=nivel_mineralizacao, min=1, max=5, divisions=4, value=4, label="Nível {value}"),
                 ft.Row([
-                    ft.ElevatedButton(content=ft.Text("Ferro", color="white"), on_click=lambda _: sidebar_sinal_fake:=detectar_sinal(120), bgcolor="grey800"),
+                    # LINHA CORRIGIDA AQUI: Removido o lixo de digitação
+                    ft.ElevatedButton(content=ft.Text("Ferro", color="white"), on_click=lambda _: detectar_sinal(120), bgcolor="grey800"),
                     ft.ElevatedButton(content=ft.Text("Médio", color="white"), on_click=lambda _: detectar_sinal(450), bgcolor="bluegrey700"),
                     ft.ElevatedButton(content=ft.Text("Prata", color="white"), on_click=lambda _: detectar_sinal(850), bgcolor="amber800"),
                 ], alignment=ft.MainAxisAlignment.CENTER, spacing=3)
