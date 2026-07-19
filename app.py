@@ -327,6 +327,5 @@ def main(page: ft.Page):
         view=ft.AppView.WEB_BROWSER, 
         host="0.0.0.0", 
         port=porta,
-        upload_dir="uploads"
-    )
+        upload_dir="uploads")
 
