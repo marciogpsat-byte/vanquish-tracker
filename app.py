@@ -29,7 +29,9 @@ def main(page: ft.Page):
     txt_vdi = ft.Ref[ft.Text]()
     txt_alvo = ft.Ref[ft.Text]()
     txt_confianca = ft.Ref[ft.Text]()
-    lista_historico = ft.ListView(expand=1, spacing=5, padding=5)
+    
+    # CORREÇÃO 1: Definido o scroll diretamente na ListView
+    lista_historico = ft.ListView(expand=True, spacing=5, padding=5, scroll=ft.ScrollMode.AUTO)
 
     # --- FUNÇÃO PARA FECHAR/ENCERRAR O APP ---
     def fechar_aplicativo(e):
@@ -37,7 +39,7 @@ def main(page: ft.Page):
         page.add(
             ft.Container(
                 content=ft.Column([
-                    ft.Icon(ft.Icons.POWER_SETTINGS_NEW, color="red500", size=60), # CORREÇÃO: Removido 'name='
+                    ft.Icon(ft.Icons.POWER_SETTINGS_NEW, color="red500", size=60),
                     ft.Text("Sessão Encerrada!", size=20, weight=ft.FontWeight.BOLD, color="white"),
                     ft.Text("O Vanquish Tracker foi fechado com segurança.", size=12, color="grey400"),
                     ft.Text("Você já pode fechar esta aba do seu navegador.", size=10, color="grey600"),
@@ -138,7 +140,8 @@ def main(page: ft.Page):
                 content=ft.Column([
                     ft.Text("Aqui você pode revisar e corrigir os registros capturados pelo detector:", size=11, color="grey400"),
                     ft.Divider(height=10, color="grey800"),
-                    ft.Container(content=tabela_dados, height=200, scroll=ft.ScrollMode.AUTO)
+                    # CORREÇÃO 2: Substituído o Container com scroll por uma Column rolável dedicada
+                    ft.Column([tabela_dados], height=200, scroll=ft.ScrollMode.AUTO)
                 ], tight=True),
                 width=300
             ),
@@ -156,7 +159,7 @@ def main(page: ft.Page):
             lista_historico.controls.append(
                 ft.Container(
                     content=ft.Row([
-                        ft.Icon(ft.Icons.GPS_FIXED, color="amber", size=14), # CORREÇÃO: Removido 'name='
+                        ft.Icon(ft.Icons.GPS_FIXED, color="amber", size=14),
                         ft.Text(f"{item['alvo']} (VDI: {item['vdi']}) - {item['confianca']}%", size=11, color="white")
                     ], alignment=ft.MainAxisAlignment.START),
                     padding=6,
@@ -313,6 +316,7 @@ def main(page: ft.Page):
         visor_vdi,
         controles,
         ft.Text("Histórico Recente", size=11, weight=ft.FontWeight.BOLD),
+        # CORREÇÃO 3: Removido o argumento 'scroll' do Container, deixando a ListView interna cuidar disso
         ft.Container(content=lista_historico, height=100, width=280, border_radius=ft.BorderRadius.all(6), bgcolor="black12"),
     )
     
