@@ -37,7 +37,7 @@ def main(page: ft.Page):
         page.add(
             ft.Container(
                 content=ft.Column([
-                    ft.Icon("power_settings_new", color="red500", size=60),
+                    ft.Icon(name=ft.Icons.POWER_SETTINGS_NEW, color="red500", size=60),
                     ft.Text("Sessão Encerrada!", size=20, weight=ft.FontWeight.BOLD, color="white"),
                     ft.Text("O Vanquish Tracker foi fechado com segurança.", size=12, color="grey400"),
                     ft.Text("Você já pode fechar esta aba do seu navegador.", size=10, color="grey600"),
@@ -72,13 +72,13 @@ def main(page: ft.Page):
                             ft.DataCell(
                                 ft.Row([
                                     ft.IconButton(
-                                        icon="edit",
+                                        icon=ft.Icons.EDIT,
                                         icon_color="amber",
                                         icon_size=16,
                                         on_click=lambda _, i=idx: iniciar_edicao(i)
                                     ),
                                     ft.IconButton(
-                                        icon="delete",
+                                        icon=ft.Icons.DELETE,
                                         icon_color="red",
                                         icon_size=16,
                                         on_click=lambda _, i=idx: excluir_registro(i)
@@ -132,7 +132,7 @@ def main(page: ft.Page):
         modal_relatorio = ft.AlertDialog(
             title=ft.Row([
                 ft.Text("Relatório de Detecção", size=16, weight=ft.FontWeight.BOLD),
-                ft.IconButton("close", on_click=lambda _: fechar_modal(modal_relatorio))
+                ft.IconButton(icon=ft.Icons.CLOSE, on_click=lambda _: fechar_modal(modal_relatorio)) # CORREÇÃO: icon=ft.Icons.CLOSE
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             content=ft.Container(
                 content=ft.Column([
@@ -156,7 +156,7 @@ def main(page: ft.Page):
             lista_historico.controls.append(
                 ft.Container(
                     content=ft.Row([
-                        ft.Icon("gps_fixed", color="amber", size=14),
+                        ft.Icon(name=ft.Icons.GPS_FIXED, color="amber", size=14),
                         ft.Text(f"{item['alvo']} (VDI: {item['vdi']}) - {item['confianca']}%", size=11, color="white")
                     ], alignment=ft.MainAxisAlignment.START),
                     padding=6,
@@ -223,14 +223,14 @@ def main(page: ft.Page):
 
             if btn_escutar.content.value == "Iniciar Escuta":
                 btn_escutar.content.value = "Ouvindo detector..."
-                btn_escutar.icon = "mic"
+                btn_escutar.icon = ft.Icons.MIC
                 btn_escutar.bgcolor = "red800"
                 txt_status_microfone.value = "Capturando som do detector..."
                 page.update()
                 gravador.start_recording()
             else:
                 btn_escutar.content.value = "Iniciar Escuta"
-                btn_escutar.icon = "mic_none"
+                btn_escutar.icon = ft.Icons.MIC_NONE
                 btn_escutar.bgcolor = "bluegrey700"
                 txt_status_microfone.value = "Processando áudio capturado..."
                 page.update()
@@ -247,15 +247,16 @@ def main(page: ft.Page):
             txt_status_microfone.value = f"Erro no microfone: {str(ex)}"
             page.update()
 
-    # --- INTERFACE GRÁFICA ---
+    # --- INTERFACE GRÁFICA CORRIGIDA ---
     header = ft.Container(
         content=ft.Row([
-            ft.IconButton("power_settings_new", icon_color="transparent", disabled=True),
+            # CORREÇÃO: Especificado explicitamente o parâmetro 'icon=' e ajustado o espaçador invisível
+            ft.IconButton(icon=ft.Icons.POWER_SETTINGS_NEW, icon_color="transparent", disabled=True),
             ft.Column([
                 ft.Text("VANQUISH TRACKER", size=15, weight=ft.FontWeight.BOLD, color="amber"),
                 ft.Text("Mapeamento Inteligente", size=8, color="grey400"),
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-            ft.IconButton("power_settings_new", icon_color="red500", tooltip="Sair do Aplicativo", on_click=fechar_aplicativo)
+            ft.IconButton(icon=ft.Icons.POWER_SETTINGS_NEW, icon_color="red500", tooltip="Sair do Aplicativo", on_click=fechar_aplicativo)
         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
         padding=ft.Padding.only(left=5, right=5, bottom=5, top=0)
     )
@@ -274,7 +275,7 @@ def main(page: ft.Page):
 
     btn_escutar = ft.ElevatedButton(
         content=ft.Text("Iniciar Escuta", color="white"),
-        icon="mic_none",
+        icon=ft.Icons.MIC_NONE,
         on_click=alternar_escuta,
         bgcolor="bluegrey700",
         width=200
@@ -282,7 +283,7 @@ def main(page: ft.Page):
 
     btn_relatorio = ft.OutlinedButton(
         content=ft.Text("Ver Relatório / Corrigir", color="amber"),
-        icon="assessment",
+        icon=ft.Icons.ASSESSMENT,
         on_click=abrir_relatorio,
         width=200
     )
@@ -298,7 +299,6 @@ def main(page: ft.Page):
                 ft.Text("Ajuste de Solo Manual", size=10, color="grey400"),
                 ft.Slider(ref=nivel_mineralizacao, min=1, max=5, divisions=4, value=4, label="Nível {value}"),
                 ft.Row([
-                    # LINHA CORRIGIDA AQUI: Removido o lixo de digitação
                     ft.ElevatedButton(content=ft.Text("Ferro", color="white"), on_click=lambda _: detectar_sinal(120), bgcolor="grey800"),
                     ft.ElevatedButton(content=ft.Text("Médio", color="white"), on_click=lambda _: detectar_sinal(450), bgcolor="bluegrey700"),
                     ft.ElevatedButton(content=ft.Text("Prata", color="white"), on_click=lambda _: detectar_sinal(850), bgcolor="amber800"),
