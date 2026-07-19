@@ -13,10 +13,6 @@ def main(page: ft.Page):
     page.scroll = ft.ScrollMode.AUTO
     page.padding = 10
 
-    # Ativando recurso de Geolocalização nativo do navegador do celular
-    v_gps = ft.Geolocation()
-    page.overlay.append(v_gps)
-
     # Texto de status inicial
     txt_status_sistema = ft.Text("Pronto para mapeamento", size=11, color="grey400")
     
@@ -37,7 +33,7 @@ def main(page: ft.Page):
                     ft.Text("Sessão Encerrada!", size=20, weight=ft.FontWeight.BOLD, color="white"),
                     ft.Text("O Vanquish Tracker foi fechado com segurança.", size=12, color="grey400"),
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=15),
-                alignment=0,
+                alignment=ft.alignment.center,
                 padding=50
             )
         )
@@ -163,7 +159,7 @@ def main(page: ft.Page):
             )
         page.update()
 
-    # --- REGISTRO MANUAL COMPLETO COM GPS REAL ---
+    # --- REGISTRO MANUAL COMPLETO COM GPS VIA PAGE ---
     def registrar_objeto_manual(e):
         if not input_vdi_manual.value:
             txt_status_sistema.value = "Por favor, digite o ID/VDI do visor!"
@@ -179,8 +175,8 @@ def main(page: ft.Page):
             txt_status_sistema.color = "amber400"
             page.update()
             
-            # Captura a posição em tempo real do aparelho celular
-            posicao = v_gps.get_current_position(accuracy=ft.GeolocationAccuracy.HIGH, timeout=5000)
+            # Captura a posição usando o recurso geolocator nativo da página
+            posicao = page.geolocation.get_current_position(accuracy=ft.GeolocationAccuracy.HIGH, timeout=5000)
             
             lat = posicao.latitude if posicao else 0.0
             lon = posicao.longitude if posicao else 0.0
@@ -209,16 +205,17 @@ def main(page: ft.Page):
             txt_status_sistema.value = "ID inválido! Insira apenas números."
             txt_status_sistema.color = "red400"
         except Exception as ex:
-            txt_status_sistema.value = f"Erro ao obter GPS: {str(ex)}"
+            txt_status_sistema.value = f"Salvo! (GPS indisponível no navegador)"
             txt_status_sistema.color = "amber500"
             
-            # Salva mesmo se o GPS falhar para você não perder o registro
+            # Salva mesmo se o GPS falhar para você não perder o registro no campo
             historico_memoria.append({
                 "alvo": dropdown_objeto.value if dropdown_objeto.value else "Outro", 
                 "vdi": int(input_vdi_manual.value), 
                 "lat": 0.0, 
                 "lon": 0.0
             })
+            input_vdi_manual.value = ""
             atualizar_historico_ui()
         page.update()
 
@@ -292,8 +289,8 @@ def main(page: ft.Page):
             content=ft.Column([
                 ft.Text("Entrada Manual de Achados", weight=ft.FontWeight.BOLD, size=11),
                 ft.Row([input_vdi_manual, dropdown_objeto], alignment=ft.MainAxisAlignment.CENTER, spacing=10),
-                ft.Container(content=btn_registrar_manual, alignment=0, padding=2),
-                ft.Container(content=btn_relatorio, alignment=0, padding=2),
+                ft.Container(content=btn_registrar_manual, alignment=ft.alignment.center, padding=2),
+                ft.Container(content=btn_relatorio, alignment=ft.alignment.center, padding=2),
                 txt_status_sistema,
             ], spacing=4, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             padding=10,
@@ -304,7 +301,7 @@ def main(page: ft.Page):
     secao_historico = ft.Column([
         ft.Container(
             content=ft.Text("Histórico Georreferenciado", size=11, weight=ft.FontWeight.BOLD),
-            alignment=0
+            alignment=ft.alignment.center
         ),
         ft.Container(
             content=lista_historico, 
