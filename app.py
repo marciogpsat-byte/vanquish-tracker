@@ -319,7 +319,14 @@ def main(page: ft.Page):
     )
     
     atualizar_historico_ui()
-
-if __name__ == '__main__':
+    if __name__ == '__main__':
     porta = int(os.environ.get("PORT", 8080))
-    ft.app(target=main, view=ft.AppView.WEB_BROWSER, host="0.0.0.0", port=porta)
+    # Adicionado upload_dir para gerenciar arquivos de áudio temporários na web
+    ft.app(
+        target=main, 
+        view=ft.AppView.WEB_BROWSER, 
+        host="0.0.0.0", 
+        port=porta,
+        upload_dir="uploads"
+    )
+
