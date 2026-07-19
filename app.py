@@ -30,7 +30,6 @@ def main(page: ft.Page):
     txt_alvo = ft.Ref[ft.Text]()
     txt_confianca = ft.Ref[ft.Text]()
     
-    # CORREÇÃO 1: Definido o scroll diretamente na ListView
     lista_historico = ft.ListView(expand=True, spacing=5, padding=5, scroll=ft.ScrollMode.AUTO)
 
     # --- FUNÇÃO PARA FECHAR/ENCERRAR O APP ---
@@ -140,7 +139,6 @@ def main(page: ft.Page):
                 content=ft.Column([
                     ft.Text("Aqui você pode revisar e corrigir os registros capturados pelo detector:", size=11, color="grey400"),
                     ft.Divider(height=10, color="grey800"),
-                    # CORREÇÃO 2: Substituído o Container com scroll por uma Column rolável dedicada
                     ft.Column([tabela_dados], height=200, scroll=ft.ScrollMode.AUTO)
                 ], tight=True),
                 width=300
@@ -213,7 +211,8 @@ def main(page: ft.Page):
 
     def alternar_escuta(e):
         if gravador is None:
-            txt_status_microfone.value = "Gravação indisponível devido ao ambiente."
+            txt_status_microfone.value = "Microfone indisponível no servidor. Use os botões abaixo para simular!"
+            txt_status_microfone.color = "amber500"
             page.update()
             return
 
@@ -316,7 +315,6 @@ def main(page: ft.Page):
         visor_vdi,
         controles,
         ft.Text("Histórico Recente", size=11, weight=ft.FontWeight.BOLD),
-        # CORREÇÃO 3: Removido o argumento 'scroll' do Container, deixando a ListView interna cuidar disso
         ft.Container(content=lista_historico, height=100, width=280, border_radius=ft.BorderRadius.all(6), bgcolor="black12"),
     )
     
