@@ -249,7 +249,7 @@ def main(page: ft.Page):
             txt_status_microfone.value = f"Erro no microfone: {str(ex)}"
             page.update()
 
-    # --- INTERFACE GRÁFICA CORRIGIDA ---
+    # --- INTERFACE GRÁFICA AJUSTADA (OTIMIZADA PARA CELULAR) ---
     header = ft.Container(
         content=ft.Row([
             ft.IconButton(icon=ft.Icons.POWER_SETTINGS_NEW, icon_color="transparent", disabled=True),
@@ -259,7 +259,7 @@ def main(page: ft.Page):
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             ft.IconButton(icon=ft.Icons.POWER_SETTINGS_NEW, icon_color="red500", tooltip="Sair do Aplicativo", on_click=fechar_aplicativo)
         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-        padding=ft.Padding.only(left=5, right=5, bottom=5, top=0)
+        padding=ft.Padding.only(left=5, right=5, bottom=0, top=0)
     )
 
     visor_vdi = ft.Container(
@@ -272,6 +272,7 @@ def main(page: ft.Page):
         padding=10,
         border_radius=ft.BorderRadius.all(10),
         width=240,
+        margin=ft.margin.only(bottom=5)
     )
 
     btn_escutar = ft.ElevatedButton(
@@ -296,7 +297,7 @@ def main(page: ft.Page):
                 ft.Container(content=btn_escutar, alignment=ft.Alignment(0, 0), padding=2),
                 ft.Container(content=btn_relatorio, alignment=ft.Alignment(0, 0), padding=2),
                 txt_status_microfone,
-                ft.Divider(height=10, color="grey800"),
+                ft.Divider(height=5, color="grey800"),
                 ft.Text("Ajuste de Solo Manual", size=10, color="grey400"),
                 ft.Slider(ref=nivel_mineralizacao, min=1, max=5, divisions=4, value=4, label="Nível {value}"),
                 ft.Row([
@@ -304,28 +305,42 @@ def main(page: ft.Page):
                     ft.ElevatedButton(content=ft.Text("Médio", color="white"), on_click=lambda _: detectar_sinal(450), bgcolor="bluegrey700"),
                     ft.ElevatedButton(content=ft.Text("Prata", color="white"), on_click=lambda _: detectar_sinal(850), bgcolor="amber800"),
                 ], alignment=ft.MainAxisAlignment.CENTER, spacing=3)
-            ], spacing=3, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            ], spacing=2, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             padding=8,
         ),
-        margin=3,
+        margin=ft.margin.only(top=0, bottom=5),
     )
+
+    secao_historico = ft.Column([
+        ft.Container(
+            content=ft.Text("Histórico Recente", size=11, weight=ft.FontWeight.BOLD),
+            alignment=ft.Alignment(-0.8, 0)
+        ),
+        ft.Container(
+            content=lista_historico, 
+            height=110, 
+            width=260, 
+            border_radius=ft.BorderRadius.all(6), 
+            bgcolor="black12",
+            padding=5
+        )
+    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=5)
 
     page.add(
         header,
         visor_vdi,
         controles,
-        ft.Text("Histórico Recente", size=11, weight=ft.FontWeight.BOLD),
-        ft.Container(content=lista_historico, height=100, width=280, border_radius=ft.BorderRadius.all(6), bgcolor="black12"),
+        secao_historico
     )
     
     atualizar_historico_ui()
-    if __name__ == '__main__':
+
+if __name__ == '__main__':
     porta = int(os.environ.get("PORT", 8080))
-    # Adicionado upload_dir para gerenciar arquivos de áudio temporários na web
     ft.app(
         target=main, 
         view=ft.AppView.WEB_BROWSER, 
         host="0.0.0.0", 
         port=porta,
-        upload_dir="uploads")
-
+        upload_dir="uploads"
+    )
