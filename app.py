@@ -249,7 +249,7 @@ def main(page: ft.Page):
             txt_status_microfone.value = f"Erro no microfone: {str(ex)}"
             page.update()
 
-    # --- INTERFACE GRÁFICA AJUSTADA (OTIMIZADA PARA CELULAR) ---
+    # --- INTERFACE GRÁFICA AJUSTADA (CORREÇÃO DE MARGIN) ---
     header = ft.Container(
         content=ft.Row([
             ft.IconButton(icon=ft.Icons.POWER_SETTINGS_NEW, icon_color="transparent", disabled=True),
@@ -272,7 +272,7 @@ def main(page: ft.Page):
         padding=10,
         border_radius=ft.BorderRadius.all(10),
         width=240,
-        margin=ft.margin.only(bottom=5)
+        margin=ft.Margin(left=0, top=0, right=0, bottom=5) # CORREÇÃO: Mudado para ft.Margin simplificado
     )
 
     btn_escutar = ft.ElevatedButton(
@@ -308,7 +308,7 @@ def main(page: ft.Page):
             ], spacing=2, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             padding=8,
         ),
-        margin=ft.margin.only(top=0, bottom=5),
+        margin=ft.Margin(left=0, top=0, right=0, bottom=5), # CORREÇÃO: Mudado para ft.Margin simplificado
     )
 
     secao_historico = ft.Column([
