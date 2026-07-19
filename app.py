@@ -3,7 +3,7 @@ import os
 import numpy as np
 from scipy.io import wavfile
 
-# Histórico temporário na memória para rodar em servidores gratuitos de nuvem
+# Histórico temporário na memória com suporte a GPS
 historico_memoria = []
 
 def main(page: ft.Page):
@@ -13,17 +13,12 @@ def main(page: ft.Page):
     page.scroll = ft.ScrollMode.AUTO
     page.padding = 10
 
-    # Texto de status inicial
-    txt_status_microfone = ft.Text("Microfone Pronto", size=11, color="grey400")
+    # Ativando recurso de Geolocalização nativo do navegador do celular
+    v_gps = ft.Geolocation()
+    page.overlay.append(v_gps)
 
-    # CONTROLE BLINDADO: Verifica se o ambiente suporta o gravador nativo
-    gravador = None
-    if hasattr(ft, "AudioRecorder"):
-        gravador = ft.AudioRecorder()
-        page.overlay.append(gravador)
-    else:
-        txt_status_microfone.value = "Aviso: Recursos de áudio limitados no servidor."
-        txt_status_microfone.color = "amber500"
+    # Texto de status inicial
+    txt_status_sistema = ft.Text("Pronto para mapeamento", size=11, color="grey400")
     
     nivel_mineralizacao = ft.Ref[ft.Slider]()
     txt_vdi = ft.Ref[ft.Text]()
@@ -41,9 +36,8 @@ def main(page: ft.Page):
                     ft.Icon(ft.Icons.POWER_SETTINGS_NEW, color="red500", size=60),
                     ft.Text("Sessão Encerrada!", size=20, weight=ft.FontWeight.BOLD, color="white"),
                     ft.Text("O Vanquish Tracker foi fechado com segurança.", size=12, color="grey400"),
-                    ft.Text("Você já pode fechar esta aba do seu navegador.", size=10, color="grey600"),
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=15),
-                alignment=ft.Alignment(0, 0),
+                alignment=0,
                 padding=50
             )
         )
@@ -53,9 +47,9 @@ def main(page: ft.Page):
     def abrir_relatorio(e):
         tabela_dados = ft.DataTable(
             columns=[
-                ft.DataColumn(ft.Text("ID", size=11)),
-                ft.DataColumn(ft.Text("Alvo", size=11)),
-                ft.DataColumn(ft.Text("VDI", size=11)),
+                ft.DataColumn(ft.Text("ID/VDI", size=11)),
+                ft.DataColumn(ft.Text("Objeto", size=11)),
+                ft.DataColumn(ft.Text("Coordenadas GPS", size=11)),
                 ft.DataColumn(ft.Text("Ações", size=11)),
             ],
             rows=[]
@@ -64,12 +58,13 @@ def main(page: ft.Page):
         def preencher_tabela():
             tabela_dados.rows.clear()
             for idx, item in enumerate(historico_memoria):
+                coordenadas = f"{item['lat']:.5f}, {item['lon']:.5f}" if item['lat'] else "Sem GPS"
                 tabela_dados.rows.append(
                     ft.DataRow(
                         cells=[
-                            ft.DataCell(ft.Text(str(idx + 1))),
-                            ft.DataCell(ft.Text(item['alvo'])),
                             ft.DataCell(ft.Text(f"{item['vdi']:+d}" if item['vdi'] != 0 else "0")),
+                            ft.DataCell(ft.Text(item['alvo'])),
+                            ft.DataCell(ft.Text(coordenadas, size=10)),
                             ft.DataCell(
                                 ft.Row([
                                     ft.IconButton(
@@ -98,7 +93,7 @@ def main(page: ft.Page):
 
         def iniciar_edicao(indice):
             item = historico_memoria[indice]
-            input_alvo = ft.TextField(label="Nome do Alvo", value=item['alvo'], dense=True)
+            input_alvo = ft.TextField(label="Objeto", value=item['alvo'], dense=True)
             input_vdi = ft.TextField(label="VDI", value=str(item['vdi']), keyboard_type=ft.KeyboardType.NUMBER, dense=True)
 
             def salvar_edicao(e):
@@ -132,16 +127,16 @@ def main(page: ft.Page):
 
         modal_relatorio = ft.AlertDialog(
             title=ft.Row([
-                ft.Text("Relatório de Detecção", size=16, weight=ft.FontWeight.BOLD),
+                ft.Text("Relatório com GPS", size=16, weight=ft.FontWeight.BOLD),
                 ft.IconButton(icon=ft.Icons.CLOSE, on_click=lambda _: fechar_modal(modal_relatorio))
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             content=ft.Container(
                 content=ft.Column([
-                    ft.Text("Aqui você pode revisar e corrigir os registros capturados pelo detector:", size=11, color="grey400"),
+                    ft.Text("Lista de achados georreferenciados:", size=11, color="grey400"),
                     ft.Divider(height=10, color="grey800"),
-                    ft.Column([tabela_dados], height=200, scroll=ft.ScrollMode.AUTO)
+                    ft.Column([tabela_dados], height=250, scroll=ft.ScrollMode.AUTO)
                 ], tight=True),
-                width=300
+                width=340
             ),
             actions_alignment=ft.MainAxisAlignment.END
         )
@@ -154,11 +149,12 @@ def main(page: ft.Page):
     def atualizar_historico_ui():
         lista_historico.controls.clear()
         for item in reversed(historico_memoria[-5:]):
+            coordenadas = f"({item['lat']:.4f}, {item['lon']:.4f})" if item['lat'] else "(Sem GPS)"
             lista_historico.controls.append(
                 ft.Container(
                     content=ft.Row([
-                        ft.Icon(ft.Icons.GPS_FIXED, color="amber", size=14),
-                        ft.Text(f"{item['alvo']} (VDI: {item['vdi']}) - {item['confianca']}%", size=11, color="white")
+                        ft.Icon(ft.Icons.LOCATION_ON, color="red400", size=12),
+                        ft.Text(f"{item['alvo']} [VDI: {item['vdi']}] {coordenadas}", size=11, color="white")
                     ], alignment=ft.MainAxisAlignment.START),
                     padding=6,
                     bgcolor="surfacevariant",
@@ -167,95 +163,72 @@ def main(page: ft.Page):
             )
         page.update()
 
-    # --- PROCESSAMENTO MATEMÁTICO REAL DO ÁUDIO ---
-    def analisar_audio_gravado(caminho_audio):
-        try:
-            taxa_amostragem, dados = wavfile.read(caminho_audio)
-            if len(dados.shape) > 1:
-                dados = dados[:, 0]
-            
-            fft_dados = np.fft.rfft(dados)
-            frequencias = np.fft.rfftfreq(len(dados), d=1.0/taxa_amostragem)
-            
-            indice_pico = np.argmax(np.abs(fft_dados))
-            frequencia_pico = frequencias[indice_pico]
-            
-            detectar_sinal(frequencia_pico)
-        except Exception:
-            txt_status_microfone.value = "Erro na análise: som muito baixo."
+    # --- REGISTRO MANUAL COMPLETO COM GPS REAL ---
+    def registrar_objeto_manual(e):
+        if not input_vdi_manual.value:
+            txt_status_sistema.value = "Por favor, digite o ID/VDI do visor!"
+            txt_status_sistema.color = "red400"
             page.update()
-
-    def detectar_sinal(freq):
-        min_level = int(nivel_mineralizacao.current.value)
-        vdi_base = int((freq - 300) / 15)
+            return
         
-        if min_level >= 4 and -4 <= vdi_base <= 3:
-            txt_vdi.current.value = "FILT"
-            txt_alvo.current.value = "Solo Mineralizado"
-            txt_confianca.current.value = "--%"
-        else:
-            txt_vdi.current.value = f"{vdi_base:+d}" if vdi_base != 0 else "0"
-            if vdi_base < 0:
-                alvo = "Ferro"
-            elif vdi_base > 20:
-                alvo = "Prata"
-            else:
-                alvo = "Moeda/Alumínio"
+        try:
+            vdi_informado = int(input_vdi_manual.value)
+            objeto_selecionado = dropdown_objeto.value if dropdown_objeto.value else "Outro"
             
-            txt_alvo.current.value = alvo
-            txt_confianca.current.value = "95%"
+            txt_status_sistema.value = "Buscando localização GPS do celular..."
+            txt_status_sistema.color = "amber400"
+            page.update()
             
-            historico_memoria.append({"alvo": alvo, "vdi": vdi_base, "confianca": 95})
+            # Captura a posição em tempo real do aparelho celular
+            posicao = v_gps.get_current_position(accuracy=ft.GeolocationAccuracy.HIGH, timeout=5000)
+            
+            lat = posicao.latitude if posicao else 0.0
+            lon = posicao.longitude if posicao else 0.0
+            
+            # Atualiza o Visor Principal do App
+            txt_vdi.current.value = f"{vdi_informado:+d}" if vdi_informado != 0 else "0"
+            txt_alvo.current.value = objeto_selecionado
+            txt_confianca.current.value = "Manual (GPS OK)" if posicao else "Manual (Sem GPS)"
+            
+            # Salva no Banco de Dados temporário
+            historico_memoria.append({
+                "alvo": objeto_selecionado, 
+                "vdi": vdi_informado, 
+                "lat": lat, 
+                "lon": lon
+            })
+            
+            txt_status_sistema.value = "Achado salvo com coordenadas GPS!"
+            txt_status_sistema.color = "green400"
+            
+            # Limpa o campo numérico para a próxima inserção
+            input_vdi_manual.value = ""
+            atualizar_historico_ui()
+            
+        except ValueError:
+            txt_status_sistema.value = "ID inválido! Insira apenas números."
+            txt_status_sistema.color = "red400"
+        except Exception as ex:
+            txt_status_sistema.value = f"Erro ao obter GPS: {str(ex)}"
+            txt_status_sistema.color = "amber500"
+            
+            # Salva mesmo se o GPS falhar para você não perder o registro
+            historico_memoria.append({
+                "alvo": dropdown_objeto.value if dropdown_objeto.value else "Outro", 
+                "vdi": int(input_vdi_manual.value), 
+                "lat": 0.0, 
+                "lon": 0.0
+            })
             atualizar_historico_ui()
         page.update()
 
-    def alternar_escuta(e):
-        if gravador is None:
-            txt_status_microfone.value = "Microfone indisponível no servidor. Use os botões abaixo para simular!"
-            txt_status_microfone.color = "amber500"
-            page.update()
-            return
-
-        try:
-            if not gravador.has_permission():
-                txt_status_microfone.value = "Solicitando permissão de áudio..."
-                page.update()
-                gravador.request_permission()
-                return
-
-            if btn_escutar.content.value == "Iniciar Escuta":
-                btn_escutar.content.value = "Ouvindo detector..."
-                btn_escutar.icon = ft.Icons.MIC
-                btn_escutar.bgcolor = "red800"
-                txt_status_microfone.value = "Capturando som do detector..."
-                page.update()
-                gravador.start_recording()
-            else:
-                btn_escutar.content.value = "Iniciar Escuta"
-                btn_escutar.icon = ft.Icons.MIC_NONE
-                btn_escutar.bgcolor = "bluegrey700"
-                txt_status_microfone.value = "Processando áudio capturado..."
-                page.update()
-                
-                caminho_arquivo = gravador.stop_recording()
-                if caminho_arquivo:
-                    analisar_audio_gravado(caminho_arquivo)
-                    txt_status_microfone.value = "Sinal Processado!"
-                else:
-                    txt_status_microfone.value = "Nenhum áudio detectado."
-                page.update()
-                
-        except Exception as ex:
-            txt_status_microfone.value = f"Erro no microfone: {str(ex)}"
-            page.update()
-
-    # --- INTERFACE GRÁFICA AJUSTADA (CORREÇÃO DE MARGIN) ---
+    # --- INTERFACE GRÁFICA AJUSTADA ---
     header = ft.Container(
         content=ft.Row([
             ft.IconButton(icon=ft.Icons.POWER_SETTINGS_NEW, icon_color="transparent", disabled=True),
             ft.Column([
                 ft.Text("VANQUISH TRACKER", size=15, weight=ft.FontWeight.BOLD, color="amber"),
-                ft.Text("Mapeamento Inteligente", size=8, color="grey400"),
+                ft.Text("Mapeamento Inteligente & GPS", size=8, color="grey400"),
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             ft.IconButton(icon=ft.Icons.POWER_SETTINGS_NEW, icon_color="red500", tooltip="Sair do Aplicativo", on_click=fechar_aplicativo)
         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
@@ -265,60 +238,77 @@ def main(page: ft.Page):
     visor_vdi = ft.Container(
         content=ft.Column([
             ft.Text(ref=txt_vdi, value="--", size=40, weight=ft.FontWeight.BOLD, color="white"),
-            ft.Text(ref=txt_alvo, value="Aguardando Sinal...", size=12, color="amber400", weight=ft.FontWeight.W_500),
-            ft.Text(ref=txt_confianca, value="--%", size=10, color="grey400"),
+            ft.Text(ref=txt_alvo, value="Aguardando Registro...", size=12, color="amber400", weight=ft.FontWeight.W_500),
+            ft.Text(ref=txt_confianca, value="--", size=10, color="grey400"),
         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
         bgcolor="bluegrey900",
         padding=10,
         border_radius=ft.BorderRadius.all(10),
         width=240,
-        margin=ft.Margin(left=0, top=0, right=0, bottom=5) # CORREÇÃO: Mudado para ft.Margin simplificado
+        margin=ft.Margin(left=0, top=0, right=0, bottom=5)
     )
 
-    btn_escutar = ft.ElevatedButton(
-        content=ft.Text("Iniciar Escuta", color="white"),
-        icon=ft.Icons.MIC_NONE,
-        on_click=alternar_escuta,
-        bgcolor="bluegrey700",
-        width=200
+    # Campos do Painel de Entrada Manual Dedicado
+    input_vdi_manual = ft.TextField(
+        label="VDI do Visor", 
+        placeholder="Ex: 36", 
+        width=100, 
+        keyboard_type=ft.KeyboardType.NUMBER,
+        dense=True
+    )
+    
+    dropdown_objeto = ft.Dropdown(
+        label="Tipo de Objeto",
+        width=130,
+        dense=True,
+        value="Moeda",
+        options=[
+            ft.dropdown.Option("Ouro"),
+            ft.dropdown.Option("Prata"),
+            ft.dropdown.Option("Moeda"),
+            ft.dropdown.Option("Biju"),
+            ft.dropdown.Option("Celular"),
+            ft.dropdown.Option("Outro"),
+        ]
+    )
+
+    btn_registrar_manual = ft.ElevatedButton(
+        content=ft.Text("Registrar Objeto + GPS", color="white", size=12),
+        icon=ft.Icons.GPS_FIXED,
+        on_click=registrar_objeto_manual,
+        bgcolor="amber800",
+        width=240
     )
 
     btn_relatorio = ft.OutlinedButton(
-        content=ft.Text("Ver Relatório / Corrigir", color="amber"),
+        content=ft.Text("Ver Relatório / Exportar", color="amber"),
         icon=ft.Icons.ASSESSMENT,
         on_click=abrir_relatorio,
-        width=200
+        width=240
     )
 
-    controles = ft.Card(
+    painel_manual = ft.Card(
         content=ft.Container(
             content=ft.Column([
-                ft.Text("Controle de Áudio e Solo", weight=ft.FontWeight.BOLD, size=11),
-                ft.Container(content=btn_escutar, alignment=ft.Alignment(0, 0), padding=2),
-                ft.Container(content=btn_relatorio, alignment=ft.Alignment(0, 0), padding=2),
-                txt_status_microfone,
-                ft.Divider(height=5, color="grey800"),
-                ft.Text("Ajuste de Solo Manual", size=10, color="grey400"),
-                ft.Slider(ref=nivel_mineralizacao, min=1, max=5, divisions=4, value=4, label="Nível {value}"),
-                ft.Row([
-                    ft.ElevatedButton(content=ft.Text("Ferro", color="white"), on_click=lambda _: detectar_sinal(120), bgcolor="grey800"),
-                    ft.ElevatedButton(content=ft.Text("Médio", color="white"), on_click=lambda _: detectar_sinal(450), bgcolor="bluegrey700"),
-                    ft.ElevatedButton(content=ft.Text("Prata", color="white"), on_click=lambda _: detectar_sinal(850), bgcolor="amber800"),
-                ], alignment=ft.MainAxisAlignment.CENTER, spacing=3)
-            ], spacing=2, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-            padding=8,
+                ft.Text("Entrada Manual de Achados", weight=ft.FontWeight.BOLD, size=11),
+                ft.Row([input_vdi_manual, dropdown_objeto], alignment=ft.MainAxisAlignment.CENTER, spacing=10),
+                ft.Container(content=btn_registrar_manual, alignment=0, padding=2),
+                ft.Container(content=btn_relatorio, alignment=0, padding=2),
+                txt_status_sistema,
+            ], spacing=4, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            padding=10,
         ),
-        margin=ft.Margin(left=0, top=0, right=0, bottom=5), # CORREÇÃO: Mudado para ft.Margin simplificado
+        margin=ft.Margin(left=0, top=0, right=0, bottom=5),
     )
 
     secao_historico = ft.Column([
         ft.Container(
-            content=ft.Text("Histórico Recente", size=11, weight=ft.FontWeight.BOLD),
-            alignment=ft.Alignment(-0.8, 0)
+            content=ft.Text("Histórico Georreferenciado", size=11, weight=ft.FontWeight.BOLD),
+            alignment=0
         ),
         ft.Container(
             content=lista_historico, 
-            height=110, 
+            height=130, 
             width=260, 
             border_radius=ft.BorderRadius.all(6), 
             bgcolor="black12",
@@ -329,7 +319,7 @@ def main(page: ft.Page):
     page.add(
         header,
         visor_vdi,
-        controles,
+        painel_manual,
         secao_historico
     )
     
