@@ -1,1 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vanquish Tracker</title>
+    <style>
+        body { background-color: #12181f; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; padding: 15px; margin: 0; }
+        .card { background-color: #1e293b; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        h1 { color: #f59e0b; font-size: 18px; margin: 5px 0; }
+        .vdi-visor { font-size: 48px; font-weight: bold; color: #ffffff; margin: 5px 0; }
+        .alvo-texto { color: #f59e0b; font-size: 16px; font-weight: 500; }
+        .sub-texto { color: #94a3b8; font-size: 12px; margin-top: 4px; }
+        input, select, button { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #334155; background-color: #0f172a; color: white; box-sizing: border-box; font-size: 14px; }
+        button { background-color: #d97706; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .row { display: flex; gap: 8px; }
+        .row > * { flex: 1; }
+        .gps-status { font-size: 11px; color: #10b981; margin-top: 4px; font-weight: 500; }
+        .historico-item { background: #0f172a; border-left: 4px solid #ef4444; padding: 8px; text-align: left; margin-bottom: 6px; border-radius: 4px; font-size: 12px; }
+    </style>
+</head>
+<body>
 
+    <h1>VANQUISH TRACKER</h1>
+    <p class="sub-texto">Mapeamento & GPS Automático (Chrome iOS)</p>
+
+    <div class="card">
+        <div class="vdi-visor">{% if ultimo %}{{ "%+d"|format(ultimo.vdi) }}{% else %}--{% endif %}</div>
+        <div class="alvo-texto">{% if ultimo %}{{ ultimo.alvo }}{% else %}Aguardando Registro...{% endif %}</div>
+        <div class="sub-texto">
+            {% if ultimo %}
+                Prof: {{ ultimo.profundidade }} cm {% if ultimo.gramatura %}| Peso: {{ ultimo.gramatura }} g{% endif %}<br>
+                <span class="gps-status">📍 {{ ultimo.gps }}</span>
+            {% else %}
+                Pronto para detectar
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <form action="/registrar" method="POST">
+            <div class="row">
+                <input type="number" name="vdi" placeholder="VDI (Ex: 36)" required>
+                <select name="objeto" id="objeto" onchange="toggleGramatura()">
+                    <option value="Ouro" selected>Ouro</option>
+                    <option value="Prata">Prata</option>
+                    <option value="Moeda">Moeda</option>
+                    <option value="Biju">Biju</option>
+                    <option value="Celular">Celular</option>
+                    <option value="Outro">Outro</option>
+                </select>
+            </div>
+
+            <div class="row">
+                <input type="number" step="0.1" name="profundidade" placeholder="Prof. (cm)">
+                <input type="number" step="0.01" name="gramatura" id="gramatura" placeholder="Peso (g)">
+            </div>
+
+            <input type="hidden" name="gps" id="input_gps">
+            <p id="txt_gps" class="gps-status">⌛ Buscando sinal GPS...</p>
+
+            <button type="submit">REGISTRAR ACHADO + GPS</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <p style="font-size: 13px; font-weight: bold; margin-top: 0;">Histórico Georreferenciado</p>
+        {% for item in historico %}
+            <div class="historico-item">
+                <strong>[{{ "%+d"|format(item.vdi) }}] {{ item.alvo }}</strong><br>
+                Prof: {{ item.profundidade }}cm {% if item.gramatura %}| Peso: {{ item.gramatura }}g{% endif %}<br>
+                <span style="color: #94a3b8; font-size: 10px;">📍 {{ item.gps }}</span>
+            </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        function toggleGramatura() {
+            var obj = document.getElementById("objeto").value;
+            var gram = document.getElementById("gramatura");
+            if (obj === "Ouro" || obj === "Prata") {
+                gram.style.display = "block";
+            } else {
+                gram.style.display = "none";
+                gram.value = "";
+            }
+        }
+
+        // CAPTURA AUTOMÁTICA DE GPS NO CHROME
+        function iniciarGPS() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.watchPosition(
+                    function(pos) {
+                        var lat = pos.coords.latitude.toFixed(5);
+                        var lon = pos.coords.longitude.toFixed(5);
+                        document.getElementById("input_gps").value = lat + ", " + lon;
+                        document.getElementById("txt_gps").innerHTML = "📍 GPS Ativo: " + lat + ", " + lon;
+                        document.getElementById("txt_gps").style.color = "#10b981";
+                    },
+                    function(err) {
+                        document.getElementById("txt_gps").innerText = "⚠️ Permitir GPS nas configurações do Chrome";
+                        document.getElementById("txt_gps").style.color = "#ef4444";
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            }
+        }
+
+        window.onload = function() {
+            toggleGramatura();
+            iniciarGPS();
+        };
+
+        document.addEventListener("visibilitychange", function() {
+            if (document.visibilityState === "visible") {
+                iniciarGPS();
+            }
+        });
+    </script>
+</body>
+</html>
