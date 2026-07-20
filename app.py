@@ -33,7 +33,7 @@ def main(page: ft.Page):
                     ft.Text("Sessão Encerrada!", size=20, weight=ft.FontWeight.BOLD, color="white"),
                     ft.Text("O Vanquish Tracker foi fechado com segurança.", size=12, color="grey400"),
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=15),
-                alignment=ft.alignment.center,
+                alignment=ft.Alignment(0, 0),
                 padding=50
             )
         )
@@ -245,7 +245,6 @@ def main(page: ft.Page):
         margin=ft.Margin(left=0, top=0, right=0, bottom=5)
     )
 
-    # CORREÇÃO: Alterado de 'placeholder' para 'hint_text'
     input_vdi_manual = ft.TextField(
         label="VDI do Visor", 
         hint_text="Ex: 36", 
@@ -284,13 +283,14 @@ def main(page: ft.Page):
         width=240
     )
 
+    # CORREÇÃO: Alinhamento alterado para ft.Alignment(0, 0)
     painel_manual = ft.Card(
         content=ft.Container(
             content=ft.Column([
                 ft.Text("Entrada Manual de Achados", weight=ft.FontWeight.BOLD, size=11),
                 ft.Row([input_vdi_manual, dropdown_objeto], alignment=ft.MainAxisAlignment.CENTER, spacing=10),
-                ft.Container(content=btn_registrar_manual, alignment=ft.alignment.center, padding=2),
-                ft.Container(content=btn_relatorio, alignment=ft.alignment.center, padding=2),
+                ft.Container(content=btn_registrar_manual, alignment=ft.Alignment(0, 0), padding=2),
+                ft.Container(content=btn_relatorio, alignment=ft.Alignment(0, 0), padding=2),
                 txt_status_sistema,
             ], spacing=4, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             padding=10,
@@ -298,10 +298,11 @@ def main(page: ft.Page):
         margin=ft.Margin(left=0, top=0, right=0, bottom=5),
     )
 
+    # CORREÇÃO: Alinhamento alterado para ft.Alignment(0, 0)
     secao_historico = ft.Column([
         ft.Container(
             content=ft.Text("Histórico Georreferenciado", size=11, weight=ft.FontWeight.BOLD),
-            alignment=ft.alignment.center
+            alignment=ft.Alignment(0, 0)
         ),
         ft.Container(
             content=lista_historico, 
