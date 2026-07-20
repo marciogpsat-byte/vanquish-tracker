@@ -13,16 +13,19 @@
         .sub-texto { color: #94a3b8; font-size: 12px; margin-top: 4px; }
         input, select, button { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #334155; background-color: #0f172a; color: white; box-sizing: border-box; font-size: 14px; }
         button { background-color: #d97706; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-audio { background-color: #0284c7; margin-top: 5px; }
         .row { display: flex; gap: 8px; }
         .row > * { flex: 1; }
         .gps-status { font-size: 11px; color: #10b981; margin-top: 4px; font-weight: 500; }
+        .audio-status { font-size: 11px; color: #38bdf8; margin-top: 2px; }
         .historico-item { background: #0f172a; border-left: 4px solid #ef4444; padding: 8px; text-align: left; margin-bottom: 6px; border-radius: 4px; font-size: 12px; }
+        audio { width: 100%; height: 30px; margin-top: 5px; }
     </style>
 </head>
 <body>
 
     <h1>VANQUISH TRACKER</h1>
-    <p class="sub-texto">Mapeamento & GPS Automático (Chrome iOS)</p>
+    <p class="sub-texto">Mapeamento, GPS & Áudio do Tom</p>
 
     <div class="card">
         <div class="vdi-visor">{% if ultimo %}{{ "%+d"|format(ultimo.vdi) }}{% else %}--{% endif %}</div>
@@ -31,6 +34,9 @@
             {% if ultimo %}
                 Prof: {{ ultimo.profundidade }} cm {% if ultimo.gramatura %}| Peso: {{ ultimo.gramatura }} g{% endif %}<br>
                 <span class="gps-status">📍 {{ ultimo.gps }}</span>
+                {% if ultimo.tem_audio %}
+                    <br><audio controls src="{{ ultimo.audio_base64 }}"></audio>
+                {% endif %}
             {% else %}
                 Pronto para detectar
             {% endif %}
@@ -38,7 +44,7 @@
     </div>
 
     <div class="card">
-        <form action="/registrar" method="POST">
+        <form id="formTracker" action="/registrar" method="POST">
             <div class="row">
                 <input type="number" name="vdi" placeholder="VDI (Ex: 36)" required>
                 <select name="objeto" id="objeto" onchange="toggleGramatura()">
@@ -57,9 +63,13 @@
             </div>
 
             <input type="hidden" name="gps" id="input_gps">
+            <input type="hidden" name="audio_base64" id="input_audio">
+            
             <p id="txt_gps" class="gps-status">⌛ Buscando sinal GPS...</p>
+            <p id="txt_audio" class="audio-status">🎙️ Microfone: Pronto para gravar som do tom</p>
 
-            <button type="submit">REGISTRAR ACHADO + GPS</button>
+            <button type="button" class="btn-audio" onclick="gravarAudio3Segundos()">🎙️ GRAVAR TOM (3 Seg)</button>
+            <button type="submit">REGISTRAR ACHADO + GPS + SOM</button>
         </form>
     </div>
 
@@ -67,9 +77,12 @@
         <p style="font-size: 13px; font-weight: bold; margin-top: 0;">Histórico Georreferenciado</p>
         {% for item in historico %}
             <div class="historico-item">
-                <strong>[{{ "%+d"|format(item.vdi) }}] {{ item.alvo }}</strong><br>
+                <strong>[{{ "%+d"|format(item.vdi) }}] {{ item.alvo }}</strong> - {{ item.data_hora }}<br>
                 Prof: {{ item.profundidade }}cm {% if item.gramatura %}| Peso: {{ item.gramatura }}g{% endif %}<br>
                 <span style="color: #94a3b8; font-size: 10px;">📍 {{ item.gps }}</span>
+                {% if item.tem_audio %}
+                    <audio controls src="{{ item.audio_base64 }}"></audio>
+                {% endif %}
             </div>
         {% endfor %}
     </div>
@@ -86,7 +99,7 @@
             }
         }
 
-        // CAPTURA AUTOMÁTICA DE GPS NO CHROME
+        // CAPTURA AUTOMÁTICA DE GPS
         function iniciarGPS() {
             if ("geolocation" in navigator) {
                 navigator.geolocation.watchPosition(
@@ -106,16 +119,51 @@
             }
         }
 
+        // GRAVAÇÃO DE ÁUDIO DE 3 SEGUNDOS
+        let mediaRecorder;
+        let audioChunks = [];
+
+        async function gravarAudio3Segundos() {
+            var txtAudio = document.getElementById("txt_audio");
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = () => {
+                        document.getElementById("input_audio").value = reader.result;
+                        txtAudio.innerText = "✅ Tom Gravado com Sucesso!";
+                        txtAudio.style.color = "#10b981";
+                    };
+                };
+
+                mediaRecorder.start();
+                txtAudio.innerText = "🔴 Gravando som do detector (3s)... Aproxime o celular!";
+                txtAudio.style.color = "#ef4444";
+
+                setTimeout(() => {
+                    mediaRecorder.stop();
+                    stream.getTracks().forEach(track => track.stop());
+                }, 3000);
+
+            } catch (err) {
+                txtAudio.innerText = "⚠️ Permita o uso do Microfone no Chrome";
+                txtAudio.style.color = "#ef4444";
+            }
+        }
+
         window.onload = function() {
             toggleGramatura();
             iniciarGPS();
         };
-
-        document.addEventListener("visibilitychange", function() {
-            if (document.visibilityState === "visible") {
-                iniciarGPS();
-            }
-        });
     </script>
 </body>
 </html>
