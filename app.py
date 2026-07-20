@@ -18,39 +18,7 @@ def main(page: ft.Page):
     txt_alvo = ft.Ref[ft.Text]()
     txt_confianca = ft.Ref[ft.Text]()
     
-    # Campos ocultos para armazenar as coordenadas capturadas pelo JavaScript do Celular
-    txt_lat = ft.TextField(visible=False, value="")
-    txt_lon = ft.TextField(visible=False, value="")
-    
     lista_historico = ft.ListView(expand=True, spacing=5, padding=5, scroll=ft.ScrollMode.AUTO)
-
-    # --- JAVASCRIPT NATIVO PARA SOLICITAR GPS DO NAVEGADOR ---
-    def solicitar_gps_automatico():
-        # Executa script diretamente no Safari/Chrome do celular para pegar o GPS real
-        js_code = """
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    var latInput = document.querySelector("input[aria-label='lat_gps']");
-                    var lonInput = document.querySelector("input[aria-label='lon_gps']");
-                    if (latInput && lonInput) {
-                        latInput.value = position.coords.latitude;
-                        lonInput.value = position.coords.longitude;
-                        latInput.dispatchEvent(new Event('input', { bubbles: true }));
-                        lonInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    }
-                },
-                function(error) {
-                    console.log("Erro ao obter GPS: " + error.message);
-                },
-                { enableHighAccuracy: true, timeout: 10000 }
-            );
-        }
-        """
-        page.run_javascript(js_code)
-
-    # Solicita a localização assim que o aplicativo abre na tela do celular
-    page.on_connect = lambda e: solicitar_gps_automatico()
 
     # --- FUNÇÃO PARA FECHAR/ENCERRAR O APP ---
     def fechar_aplicativo(e):
@@ -188,8 +156,8 @@ def main(page: ft.Page):
             )
         page.update()
 
-    # --- REGISTRO DO OBJETO UTILIZANDO COORDENADAS CAPTURADAS ---
-    def registrar_objeto_manual(e):
+    # --- REGISTRO ASSÍNCRONO DO OBJETO COM CAPTURA DIRETA DO GPS ---
+    async def registrar_objeto_manual(e):
         if not input_vdi_manual.value:
             txt_status_sistema.value = "Por favor, digite o ID/VDI do visor!"
             txt_status_sistema.color = "red400"
@@ -197,18 +165,24 @@ def main(page: ft.Page):
             return
         
         try:
-            # Tenta disparar uma atualização de GPS imediata no celular
-            solicitar_gps_automatico()
-            
             vdi_informado = int(input_vdi_manual.value)
             objeto_selecionado = dropdown_objeto.value if dropdown_objeto.value else "Outro"
             
-            # Tenta converter os campos de lat/lon preenchidos pelo JS
+            txt_status_sistema.value = "Obtendo sinal GPS..."
+            txt_status_sistema.color = "amber400"
+            page.update()
+            
+            lat = 0.0
+            lon = 0.0
+            
+            # Chama a Geolocalização Assíncrona do Flet de forma segura
             try:
-                lat = float(txt_lat.value) if txt_lat.value else 0.0
-                lon = float(txt_lon.value) if txt_lon.value else 0.0
-            except ValueError:
-                lat, lon = 0.0, 0.0
+                pos = await page.get_geolocation_async()
+                if pos:
+                    lat = pos.latitude
+                    lon = pos.longitude
+            except Exception:
+                pass
 
             # Atualiza o Visor Principal do App
             txt_vdi.current.value = f"{vdi_informado:+d}" if vdi_informado != 0 else "0"
@@ -227,7 +201,7 @@ def main(page: ft.Page):
                 txt_status_sistema.value = "Achado registrado com GPS!"
                 txt_status_sistema.color = "green400"
             else:
-                txt_status_sistema.value = "Salvo! Permita a localização no seu navegador."
+                txt_status_sistema.value = "Salvo! Ative o GPS nas configurações do celular."
                 txt_status_sistema.color = "amber400"
             
             # Limpa o campo de entrada para o próximo registro
@@ -288,10 +262,6 @@ def main(page: ft.Page):
         ]
     )
 
-    # Campos invisíveis com labels acessíveis para o JavaScript encontrar no DOM
-    txt_lat.label = "lat_gps"
-    txt_lon.label = "lon_gps"
-
     btn_registrar_manual = ft.ElevatedButton(
         content=ft.Text("Registrar Objeto + GPS", color="white", size=12),
         icon=ft.Icons.GPS_FIXED,
@@ -315,8 +285,6 @@ def main(page: ft.Page):
                 ft.Container(content=btn_registrar_manual, alignment=ft.Alignment(0, 0), padding=2),
                 ft.Container(content=btn_relatorio, alignment=ft.Alignment(0, 0), padding=2),
                 txt_status_sistema,
-                txt_lat,
-                txt_lon
             ], spacing=4, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             padding=10,
         ),
