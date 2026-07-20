@@ -175,16 +175,26 @@ def main(page: ft.Page):
             txt_status_sistema.color = "amber400"
             page.update()
             
-            # Captura a posição usando o recurso geolocator nativo da página
-            posicao = page.geolocation.get_current_position(accuracy=ft.GeolocationAccuracy.HIGH, timeout=5000)
+            lat = 0.0
+            lon = 0.0
             
-            lat = posicao.latitude if posicao else 0.0
-            lon = posicao.longitude if posicao else 0.0
-            
+            # Tenta capturar a geolocalização se o suporte estiver disponível na página
+            if hasattr(page, "geolocation") and page.geolocation:
+                try:
+                    posicao = page.geolocation.get_current_position(
+                        accuracy=ft.GeolocationAccuracy.HIGH, 
+                        timeout=5000
+                    )
+                    if posicao:
+                        lat = posicao.latitude
+                        lon = posicao.longitude
+                except Exception:
+                    pass
+
             # Atualiza o Visor Principal do App
             txt_vdi.current.value = f"{vdi_informado:+d}" if vdi_informado != 0 else "0"
             txt_alvo.current.value = objeto_selecionado
-            txt_confianca.current.value = "Manual (GPS OK)" if posicao else "Manual (Sem GPS)"
+            txt_confianca.current.value = "Manual (GPS OK)" if lat != 0.0 else "Manual (Sem GPS)"
             
             # Salva no Banco de Dados temporário
             historico_memoria.append({
@@ -194,7 +204,7 @@ def main(page: ft.Page):
                 "lon": lon
             })
             
-            txt_status_sistema.value = "Achado salvo com coordenadas GPS!"
+            txt_status_sistema.value = "Achado salvo com sucesso!"
             txt_status_sistema.color = "green400"
             
             # Limpa o campo numérico para a próxima inserção
@@ -205,18 +215,8 @@ def main(page: ft.Page):
             txt_status_sistema.value = "ID inválido! Insira apenas números."
             txt_status_sistema.color = "red400"
         except Exception as ex:
-            txt_status_sistema.value = f"Salvo! (GPS indisponível no navegador)"
+            txt_status_sistema.value = f"Erro no registro: {str(ex)}"
             txt_status_sistema.color = "amber500"
-            
-            # Salva mesmo se o GPS falhar para você não perder o registro no campo
-            historico_memoria.append({
-                "alvo": dropdown_objeto.value if dropdown_objeto.value else "Outro", 
-                "vdi": int(input_vdi_manual.value), 
-                "lat": 0.0, 
-                "lon": 0.0
-            })
-            input_vdi_manual.value = ""
-            atualizar_historico_ui()
         page.update()
 
     # --- INTERFACE GRÁFICA AJUSTADA ---
@@ -245,10 +245,10 @@ def main(page: ft.Page):
         margin=ft.Margin(left=0, top=0, right=0, bottom=5)
     )
 
-    # Campos do Painel de Entrada Manual Dedicado
+    # CORREÇÃO: Alterado de 'placeholder' para 'hint_text'
     input_vdi_manual = ft.TextField(
         label="VDI do Visor", 
-        placeholder="Ex: 36", 
+        hint_text="Ex: 36", 
         width=100, 
         keyboard_type=ft.KeyboardType.NUMBER,
         dense=True
