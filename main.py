@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-import os
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -11,11 +10,12 @@ historico_memoria = []
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {
-        "request": request, 
+    context = {
+        "request": request,
         "historico": list(reversed(historico_memoria)),
         "ultimo": historico_memoria[-1] if historico_memoria else None
-    })
+    }
+    return templates.TemplateResponse("index.html", context)
 
 @app.post("/registrar", response_class=HTMLResponse)
 async def registrar(
@@ -38,8 +38,9 @@ async def registrar(
     
     historico_memoria.append(novo_registro)
     
-    return templates.TemplateResponse("index.html", {
-        "request": request, 
+    context = {
+        "request": request,
         "historico": list(reversed(historico_memoria)),
         "ultimo": novo_registro
-    })
+    }
+    return templates.TemplateResponse("index.html", context)
