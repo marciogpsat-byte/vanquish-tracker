@@ -1,7 +1,5 @@
 import flet as ft
 import os
-import numpy as np
-from scipy.io import wavfile
 
 # Histórico temporário na memória com suporte a GPS
 historico_memoria = []
@@ -16,12 +14,43 @@ def main(page: ft.Page):
     # Texto de status inicial
     txt_status_sistema = ft.Text("Pronto para mapeamento", size=11, color="grey400")
     
-    nivel_mineralizacao = ft.Ref[ft.Slider]()
     txt_vdi = ft.Ref[ft.Text]()
     txt_alvo = ft.Ref[ft.Text]()
     txt_confianca = ft.Ref[ft.Text]()
     
+    # Campos ocultos para armazenar as coordenadas capturadas pelo JavaScript do Celular
+    txt_lat = ft.TextField(visible=False, value="")
+    txt_lon = ft.TextField(visible=False, value="")
+    
     lista_historico = ft.ListView(expand=True, spacing=5, padding=5, scroll=ft.ScrollMode.AUTO)
+
+    # --- JAVASCRIPT NATIVO PARA SOLICITAR GPS DO NAVEGADOR ---
+    def solicitar_gps_automatico():
+        # Executa script diretamente no Safari/Chrome do celular para pegar o GPS real
+        js_code = """
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    var latInput = document.querySelector("input[aria-label='lat_gps']");
+                    var lonInput = document.querySelector("input[aria-label='lon_gps']");
+                    if (latInput && lonInput) {
+                        latInput.value = position.coords.latitude;
+                        lonInput.value = position.coords.longitude;
+                        latInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        lonInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                },
+                function(error) {
+                    console.log("Erro ao obter GPS: " + error.message);
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+        """
+        page.run_javascript(js_code)
+
+    # Solicita a localização assim que o aplicativo abre na tela do celular
+    page.on_connect = lambda e: solicitar_gps_automatico()
 
     # --- FUNÇÃO PARA FECHAR/ENCERRAR O APP ---
     def fechar_aplicativo(e):
@@ -54,7 +83,7 @@ def main(page: ft.Page):
         def preencher_tabela():
             tabela_dados.rows.clear()
             for idx, item in enumerate(historico_memoria):
-                coordenadas = f"{item['lat']:.5f}, {item['lon']:.5f}" if item['lat'] else "Sem GPS"
+                coordenadas = f"{item['lat']:.5f}, {item['lon']:.5f}" if item['lat'] != 0.0 else "Sem GPS"
                 tabela_dados.rows.append(
                     ft.DataRow(
                         cells=[
@@ -145,11 +174,11 @@ def main(page: ft.Page):
     def atualizar_historico_ui():
         lista_historico.controls.clear()
         for item in reversed(historico_memoria[-5:]):
-            coordenadas = f"({item['lat']:.4f}, {item['lon']:.4f})" if item['lat'] else "(Sem GPS)"
+            coordenadas = f"({item['lat']:.4f}, {item['lon']:.4f})" if item['lat'] != 0.0 else "(Sem GPS)"
             lista_historico.controls.append(
                 ft.Container(
                     content=ft.Row([
-                        ft.Icon(ft.Icons.LOCATION_ON, color="red400", size=12),
+                        ft.Icon(ft.Icons.LOCATION_ON, color="red400" if item['lat'] != 0.0 else "grey", size=12),
                         ft.Text(f"{item['alvo']} [VDI: {item['vdi']}] {coordenadas}", size=11, color="white")
                     ], alignment=ft.MainAxisAlignment.START),
                     padding=6,
@@ -159,7 +188,7 @@ def main(page: ft.Page):
             )
         page.update()
 
-    # --- REGISTRO MANUAL COMPLETO COM GPS VIA PAGE ---
+    # --- REGISTRO DO OBJETO UTILIZANDO COORDENADAS CAPTURADAS ---
     def registrar_objeto_manual(e):
         if not input_vdi_manual.value:
             txt_status_sistema.value = "Por favor, digite o ID/VDI do visor!"
@@ -168,35 +197,25 @@ def main(page: ft.Page):
             return
         
         try:
+            # Tenta disparar uma atualização de GPS imediata no celular
+            solicitar_gps_automatico()
+            
             vdi_informado = int(input_vdi_manual.value)
             objeto_selecionado = dropdown_objeto.value if dropdown_objeto.value else "Outro"
             
-            txt_status_sistema.value = "Buscando localização GPS do celular..."
-            txt_status_sistema.color = "amber400"
-            page.update()
-            
-            lat = 0.0
-            lon = 0.0
-            
-            # Tenta capturar a geolocalização se o suporte estiver disponível na página
-            if hasattr(page, "geolocation") and page.geolocation:
-                try:
-                    posicao = page.geolocation.get_current_position(
-                        accuracy=ft.GeolocationAccuracy.HIGH, 
-                        timeout=5000
-                    )
-                    if posicao:
-                        lat = posicao.latitude
-                        lon = posicao.longitude
-                except Exception:
-                    pass
+            # Tenta converter os campos de lat/lon preenchidos pelo JS
+            try:
+                lat = float(txt_lat.value) if txt_lat.value else 0.0
+                lon = float(txt_lon.value) if txt_lon.value else 0.0
+            except ValueError:
+                lat, lon = 0.0, 0.0
 
             # Atualiza o Visor Principal do App
             txt_vdi.current.value = f"{vdi_informado:+d}" if vdi_informado != 0 else "0"
             txt_alvo.current.value = objeto_selecionado
-            txt_confianca.current.value = "Manual (GPS OK)" if lat != 0.0 else "Manual (Sem GPS)"
+            txt_confianca.current.value = "GPS Capturado" if lat != 0.0 else "Manual (Sem GPS)"
             
-            # Salva no Banco de Dados temporário
+            # Salva no histórico
             historico_memoria.append({
                 "alvo": objeto_selecionado, 
                 "vdi": vdi_informado, 
@@ -204,22 +223,23 @@ def main(page: ft.Page):
                 "lon": lon
             })
             
-            txt_status_sistema.value = "Achado salvo com sucesso!"
-            txt_status_sistema.color = "green400"
+            if lat != 0.0:
+                txt_status_sistema.value = "Achado registrado com GPS!"
+                txt_status_sistema.color = "green400"
+            else:
+                txt_status_sistema.value = "Salvo! Permita a localização no seu navegador."
+                txt_status_sistema.color = "amber400"
             
-            # Limpa o campo numérico para a próxima inserção
+            # Limpa o campo de entrada para o próximo registro
             input_vdi_manual.value = ""
             atualizar_historico_ui()
             
         except ValueError:
             txt_status_sistema.value = "ID inválido! Insira apenas números."
             txt_status_sistema.color = "red400"
-        except Exception as ex:
-            txt_status_sistema.value = f"Erro no registro: {str(ex)}"
-            txt_status_sistema.color = "amber500"
         page.update()
 
-    # --- INTERFACE GRÁFICA AJUSTADA ---
+    # --- INTERFACE GRÁFICA ---
     header = ft.Container(
         content=ft.Row([
             ft.IconButton(icon=ft.Icons.POWER_SETTINGS_NEW, icon_color="transparent", disabled=True),
@@ -268,6 +288,10 @@ def main(page: ft.Page):
         ]
     )
 
+    # Campos invisíveis com labels acessíveis para o JavaScript encontrar no DOM
+    txt_lat.label = "lat_gps"
+    txt_lon.label = "lon_gps"
+
     btn_registrar_manual = ft.ElevatedButton(
         content=ft.Text("Registrar Objeto + GPS", color="white", size=12),
         icon=ft.Icons.GPS_FIXED,
@@ -283,7 +307,6 @@ def main(page: ft.Page):
         width=240
     )
 
-    # CORREÇÃO: Alinhamento alterado para ft.Alignment(0, 0)
     painel_manual = ft.Card(
         content=ft.Container(
             content=ft.Column([
@@ -292,13 +315,14 @@ def main(page: ft.Page):
                 ft.Container(content=btn_registrar_manual, alignment=ft.Alignment(0, 0), padding=2),
                 ft.Container(content=btn_relatorio, alignment=ft.Alignment(0, 0), padding=2),
                 txt_status_sistema,
+                txt_lat,
+                txt_lon
             ], spacing=4, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             padding=10,
         ),
         margin=ft.Margin(left=0, top=0, right=0, bottom=5),
     )
 
-    # CORREÇÃO: Alinhamento alterado para ft.Alignment(0, 0)
     secao_historico = ft.Column([
         ft.Container(
             content=ft.Text("Histórico Georreferenciado", size=11, weight=ft.FontWeight.BOLD),
